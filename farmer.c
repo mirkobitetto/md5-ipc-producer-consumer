@@ -45,7 +45,6 @@ int main(int argc, char *argv[])
 
     pid_t processID[NROF_WORKERS]; /* Array of proces ID from fork() */
 
-    // i took the following code from interproces_basics.c
     mqd_t mq_fd_request;
     mqd_t mq_fd_response;
     MQ_REQUEST_MESSAGE req;
@@ -65,10 +64,38 @@ int main(int argc, char *argv[])
 
     //  * create the child processes (see process_test() and
     //    message_queue_test())
+    for (int i = 0; i < NROF_WORKERS; i++) // Loops over Nr of workers
+    {
+        processID[i] = fork(); //Creates N processes and store them in processId array
+        if (processID[i] < 0)
+        {
+            perror("fork() failed");
+            exit(1);
+        }
+        else
+        {
+            if (processID[i] == 0)
+            {
+                printf("child  pid:%d\n", getpid());
+                execlp("./worker", "worker", mq_name1, mq_name2, NULL); // Load worker program in child processes with arguments the 2 message queues
+                // or try this one:
+                //execlp ("./interprocess_basics", "my_own_name_for_argv0", "first_argument", NULL);
+
+                // we should never arrive here...
+                perror("execlp() failed");
+            }
+            // else: we are still the parent (which continues this program)
+        }
+    }
 
     //  * do the farming
 
     //  * wait until the chilren have been stopped (see process_test())
+    for (int i = 0; i < NROF_WORKERS; i++)
+    {
+        waitpid(processID[i], NULL, 0); // wait for the child
+        printf("child %d has been finished\n", processID[i]);
+    }
 
     //  * clean up the message queues (see message_queue_test())
 
