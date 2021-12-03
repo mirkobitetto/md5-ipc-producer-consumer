@@ -17,32 +17,42 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <errno.h>      // for perror()
-#include <unistd.h>     // for getpid()
-#include <mqueue.h>     // for mq-stuff
-#include <time.h>       // for time()
+#include <errno.h>  // for perror()
+#include <unistd.h> // for getpid()
+#include <mqueue.h> // for mq-stuff
+#include <time.h>   // for time()
 #include <complex.h>
 
 #include "common.h"
 #include "md5s.h"
 
-static void rsleep (int t);
+static void rsleep(int t);
 
-
-int main (int argc, char * argv[])
+int main(int argc, char *argv[])
 {
     // TODO:
     // (see message_queue_test() in interprocess_basic.c)
     //  * open the two message queues (whose names are provided in the
     //    arguments)
+    mqd_t mq_fd_request;
+    mqd_t mq_fd_response;
+    MQ_REQUEST_MESSAGE req;
+    MQ_RESPONSE_MESSAGE rsp;
+
+    mq_fd_request = mq_open(argv[1], O_RDONLY);  //open request message queue with name recived from argument (argv[1])
+    mq_fd_response = mq_open(argv[2], O_WRONLY); //open response message queue with name recived from argument (argv[2])
+
     //  * repeatingly:
     //      - read from a message queue the new job to do
     //      - wait a random amount of time (e.g. rsleep(10000);)
-    //      - do that job 
+    //      - do that job
     //      - write the results to a message queue
     //    until there are no more tasks to do
+
     //  * close the message queues
-    
+    mq_close(mq_fd_response);
+    mq_close(mq_fd_request);
+
     return (0);
 }
 
@@ -53,14 +63,14 @@ int main (int argc, char * argv[])
  * between 0 and t microseconds
  * At the first call, the random generator is seeded with the current time
  */
-static void rsleep (int t)
+static void rsleep(int t)
 {
     static bool first_call = true;
-    
+
     if (first_call == true)
     {
-        srandom (time (NULL) % getpid ());
+        srandom(time(NULL) % getpid());
         first_call = false;
     }
-    usleep (random() % t);
+    usleep(random() % t);
 }
