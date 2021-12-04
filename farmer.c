@@ -39,7 +39,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: invalid arguments\n", argv[0]);
     }
 
-    // TODO:
     //  * create the message queues (see message_queue_test() in
     //    interprocess_basic.c)
 
@@ -88,6 +87,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    // TODO
     //  * do the farming
 
     //  * wait until the chilren have been stopped (see process_test())

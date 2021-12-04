@@ -26,6 +26,8 @@
 #include "common.h"
 #include "md5s.h"
 
+struct mq_attr attr;
+
 static void rsleep(int t);
 
 int main(int argc, char *argv[])
@@ -39,14 +41,28 @@ int main(int argc, char *argv[])
     MQ_REQUEST_MESSAGE req;
     MQ_RESPONSE_MESSAGE rsp;
 
-    mq_fd_request = mq_open(argv[1], O_RDONLY);  //open request message queue with name recived from argument (argv[1])
-    mq_fd_response = mq_open(argv[2], O_WRONLY); //open response message queue with name recived from argument (argv[2])
+    mq_fd_request = mq_open(argv[1], O_RDONLY, &attr); //open request message queue with name recived from argument (argv[1]) and initializes the attributes struct
+    mq_fd_response = mq_open(argv[2], O_WRONLY);       //open response message queue with name recived from argument (argv[2])
 
     //  * repeatingly:
-    //      - read from a message queue the new job to do
-    //      - wait a random amount of time (e.g. rsleep(10000);)
-    //      - do that job
-    //      - write the results to a message queue
+    mq_getattr(mq_fd_request, &attr); // get attrubutes of message queues and puts them in attr struct
+
+    while (attr.mq_curmsgs != 0) /* mq_curmsgs is # of messages currently in queue */
+    {
+        //      - read from a message queue the new job to do
+        mq_receive(mq_fd_request, (char *)&req, sizeof(req), NULL);
+
+        //      - wait a random amount of time (e.g. rsleep(10000);)
+        rsleep(10000);
+
+        //      - do that job
+
+        //      - write the results to a message queue
+        mq_send(mq_fd_response, (char *)&rsp, sizeof(rsp), 0);
+
+        // Update attributes
+        mq_getattr(mq_fd_request, &attr);
+    }
     //    until there are no more tasks to do
 
     //  * close the message queues
