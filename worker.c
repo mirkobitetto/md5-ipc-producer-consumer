@@ -32,7 +32,7 @@ static void rsleep(int t);
 
 int main(int argc, char *argv[])
 {
-    // TODO:
+
     // (see message_queue_test() in interprocess_basic.c)
     //  * open the two message queues (whose names are provided in the
     //    arguments)
@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
         //      - wait a random amount of time (e.g. rsleep(10000);)
         rsleep(10000);
 
+        // TODO:
         //      - do that job
 
         //      - write the results to a message queue
