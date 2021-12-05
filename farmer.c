@@ -75,7 +75,8 @@ int main(int argc, char *argv[])
         {
             if (processID[i] == 0)
             {
-                printf("child  pid:%d\n", getpid());
+                // printf("child  pid:%d\n", getpid()); print pid of child, might be useful for debug
+
                 execlp("./worker", "worker", mq_name1, mq_name2, NULL); // Load worker program in child processes with arguments the 2 message queues
                 // or try this one:
                 //execlp ("./interprocess_basics", "my_own_name_for_argv0", "first_argument", NULL);
@@ -89,6 +90,27 @@ int main(int argc, char *argv[])
 
     // TODO
     //  * do the farming
+
+    int jobs_todo = JOBS_NROF; // Jobs_todo defined as nr_hashes * number of char
+
+    while (jobs_todo != 0) // until there is jobs to do
+    {
+        // if the message queue is not empty -> send a new message (todo)
+
+        // Body of the request to send to the worker
+        req.START_CHAR_ALPHABET = ALPHABET_START_CHAR;
+        req.END_CHAR_ALPHABET = ALPHABET_END_CHAR;
+        req.first_letter = ALPHABET_START_CHAR;
+        req.md5_hash = md5_list[0];
+
+        //Send message
+        mq_send(mq_fd_request, (char *)&req, sizeof(req), 0);
+
+        // else if there is new messages received read them (todo)
+        mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
+        // print matched word to stdout
+        printf("\'%s\'\n", rsp.match);
+    }
 
     //  * wait until the chilren have been stopped (see process_test())
     for (int i = 0; i < NROF_WORKERS; i++)
