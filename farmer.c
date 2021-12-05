@@ -91,25 +91,47 @@ int main(int argc, char *argv[])
     // TODO
     //  * do the farming
 
-    int jobs_todo = JOBS_NROF; // Jobs_todo defined as nr_hashes * number of char
+    int jobs_todo = JOBS_NROF;             // Jobs_todo defined as nr_hashes * number of char
+    int curr_hash = 0;                     // index of the current hash trying to brute-force
+    int curr_letter = ALPHABET_START_CHAR; // current intial letter to send to worker
 
     while (jobs_todo != 0) // until there is jobs to do
     {
-        // if the message queue is not empty -> send a new message (todo)
+        // if the message queue is not full -> send a new message
+        mq_getattr(mq_fd_request, &attr);
+        if (attr.mq_curmsgs < MQ_MAX_MESSAGES) //attr.mq_currmsgs returns the number of messages in the queue
+        {
+            // Body of the request to send to the worker
+            req.START_CHAR_ALPHABET = ALPHABET_START_CHAR;
+            req.END_CHAR_ALPHABET = ALPHABET_END_CHAR;
+            req.first_letter = curr_letter;
+            req.md5_hash = md5_list[curr_hash];
 
-        // Body of the request to send to the worker
-        req.START_CHAR_ALPHABET = ALPHABET_START_CHAR;
-        req.END_CHAR_ALPHABET = ALPHABET_END_CHAR;
-        req.first_letter = ALPHABET_START_CHAR;
-        req.md5_hash = md5_list[0];
+            //Send message
+            mq_send(mq_fd_request, (char *)&req, sizeof(req), 0);
+        }
 
-        //Send message
-        mq_send(mq_fd_request, (char *)&req, sizeof(req), 0);
+        mq_getattr(mq_fd_response, &attr); // number of messages in response message queue
+        if (attr.mq_curmsgs > 0)           // else if there is new messages received, read them
+        {
 
-        // else if there is new messages received read them (todo)
-        mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
-        // print matched word to stdout
-        printf("\'%s\'\n", rsp.match);
+            mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
+            // print matched word to stdout
+            if (strlen(rsp.match) != 0)
+            {
+                printf("\'%s\'\n", rsp.match);
+            }
+
+            jobs_todo--;
+        }
+        if (curr_letter < ALPHABET_END_CHAR) // if there are still initial letters left to try, update current letter
+        {
+            curr_letter++;
+        }
+        else if (curr_letter == ALPHABET_END_CHAR && curr_hash < MD5_LIST_NROF) // if last initial letter has been reached and there is still other hashes to bruteforce, go to the next one
+        {
+            curr_hash++;
+        }
     }
 
     //  * wait until the chilren have been stopped (see process_test())
