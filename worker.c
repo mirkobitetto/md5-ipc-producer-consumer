@@ -29,6 +29,7 @@
 struct mq_attr attr;
 
 static void rsleep(int t);
+static MQ_RESPONSE_MESSAGE bruteforce(MQ_REQUEST_MESSAGE req);
 
 int main(int argc, char *argv[])
 {
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
 
         // TODO:
         //      - do that job
+        rsp = bruteforce(req);
 
         //      - write the results to a message queue
         mq_send(mq_fd_response, (char *)&rsp, sizeof(rsp), 0);
@@ -90,4 +92,30 @@ static void rsleep(int t)
         first_call = false;
     }
     usleep(random() % t);
+}
+
+static MQ_RESPONSE_MESSAGE bruteforce(MQ_REQUEST_MESSAGE req)
+{
+    MQ_RESPONSE_MESSAGE rsp;
+    char word[MAX_MESSAGE_LENGTH];
+    // Initializes the response string
+    for (int i = 0; i < MAX_MESSAGE_LENGTH; i++)
+    {
+        rsp.match[i] = '\0';
+        word[i] = '\0';
+    }
+
+    word[0] = req.first_letter; //copy first letter in the 'word' string
+    uint128_t hash;
+    hash = md5s(word, strlen(word)); //calculates the hash of the string
+
+    if (hash == req.md5_hash) // if hash match the word copy the result in response.match
+    {
+        strcpy(rsp.match, word);
+        return rsp;
+    }
+    else
+    {
+        return rsp;
+    }
 }
