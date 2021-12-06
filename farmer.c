@@ -94,9 +94,11 @@ int main(int argc, char *argv[])
     int jobs_todo = JOBS_NROF;             // Jobs_todo defined as nr_hashes * number of char
     int curr_hash = 0;                     // index of the current hash trying to brute-force
     int curr_letter = ALPHABET_START_CHAR; // current intial letter to send to worker
+    int nr_message = 0;
 
     while (jobs_todo != 0) // until there is jobs to do
     {
+
         // if the message queue is not full -> send a new message
         mq_getattr(mq_fd_request, &attr);
         if (attr.mq_curmsgs < MQ_MAX_MESSAGES) //attr.mq_currmsgs returns the number of messages in the queue
@@ -109,28 +111,40 @@ int main(int argc, char *argv[])
 
             //Send message
             mq_send(mq_fd_request, (char *)&req, sizeof(req), 0);
+            nr_message++;
+
+            if (curr_letter < ALPHABET_END_CHAR) // if there are still initial letters left to try, update current letter
+            {
+                curr_letter++;
+            }
+            else if (curr_letter == ALPHABET_END_CHAR && curr_hash < MD5_LIST_NROF) // if last initial letter has been reached and there is still other hashes to bruteforce, go to the next one
+            {
+                curr_hash++;
+            }
         }
 
         mq_getattr(mq_fd_response, &attr); // number of messages in response message queue
         if (attr.mq_curmsgs > 0)           // else if there is new messages received, read them
         {
-
             mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
             // print matched word to stdout
-            if (strlen(rsp.match) != 0)
+            nr_message--;
+            if (strlen(rsp.match) > 0)
             {
                 printf("\'%s\'\n", rsp.match);
             }
-
             jobs_todo--;
         }
-        if (curr_letter < ALPHABET_END_CHAR) // if there are still initial letters left to try, update current letter
+    }
+
+    while (nr_message != 0)
+    {
+        mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
+        // print matched word to stdout
+        nr_message--;
+        if (strlen(rsp.match) > 0)
         {
-            curr_letter++;
-        }
-        else if (curr_letter == ALPHABET_END_CHAR && curr_hash < MD5_LIST_NROF) // if last initial letter has been reached and there is still other hashes to bruteforce, go to the next one
-        {
-            curr_hash++;
+            printf("\'%s\'\n", rsp.match);
         }
     }
 
@@ -138,7 +152,6 @@ int main(int argc, char *argv[])
     for (int i = 0; i < NROF_WORKERS; i++)
     {
         waitpid(processID[i], NULL, 0); // wait for the child
-        printf("child %d has been finished\n", processID[i]);
     }
 
     //  * clean up the message queues (see message_queue_test())

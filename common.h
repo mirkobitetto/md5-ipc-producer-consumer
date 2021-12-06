@@ -30,7 +30,7 @@ typedef struct
 typedef struct
 {
     //define data structure of the response message
-    char match[MAX_MESSAGE_LENGTH]; // matched hash
+    char match[MAX_MESSAGE_LENGTH + 1]; // matched hash
 
 } MQ_RESPONSE_MESSAGE;
 

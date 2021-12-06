@@ -29,7 +29,13 @@
 struct mq_attr attr;
 
 static void rsleep(int t);
-static MQ_RESPONSE_MESSAGE bruteforce(MQ_REQUEST_MESSAGE req);
+
+bool calculate_hash(MQ_REQUEST_MESSAGE req, char word[]);
+void bruteSequential(MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp);
+bool bruteImpl(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp);
+//
+
+//
 
 int main(int argc, char *argv[])
 {
@@ -56,9 +62,26 @@ int main(int argc, char *argv[])
         //      - wait a random amount of time (e.g. rsleep(10000);)
         rsleep(10000);
 
-        // TODO:
         //      - do that job
-        rsp = bruteforce(req);
+
+        // Initializes the response string
+        for (int i = 0; i < MAX_MESSAGE_LENGTH + 1; i++)
+        {
+            rsp.match[i] = '\0';
+        }
+
+        char initial[] = {req.first_letter, '\0'}; //let's test if the initial is the solution
+
+        bool found = calculate_hash(req, initial);
+
+        if (found == true)
+        {
+            strcpy(rsp.match, initial);
+        }
+        else
+        {
+            bruteSequential(req, &rsp);
+        }
 
         //      - write the results to a message queue
         mq_send(mq_fd_response, (char *)&rsp, sizeof(rsp), 0);
@@ -94,28 +117,47 @@ static void rsleep(int t)
     usleep(random() % t);
 }
 
-static MQ_RESPONSE_MESSAGE bruteforce(MQ_REQUEST_MESSAGE req)
+bool calculate_hash(MQ_REQUEST_MESSAGE req, char word[])
 {
-    MQ_RESPONSE_MESSAGE rsp;
-    char word[MAX_MESSAGE_LENGTH];
-    // Initializes the response string
-    for (int i = 0; i < MAX_MESSAGE_LENGTH; i++)
+    uint128_t hash = md5s(word, strlen(word));
+    if (hash == req.md5_hash)
     {
-        rsp.match[i] = '\0';
-        word[i] = '\0';
+        return true;
     }
+    return false;
+}
 
-    word[0] = req.first_letter; //copy first letter in the 'word' string
-    uint128_t hash;
-    hash = md5s(word, strlen(word)); //calculates the hash of the string
+void bruteSequential(MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp)
+{
+    char buff[MAX_MESSAGE_LENGTH + 1];
+    int alphabetSize = (int)req.END_CHAR_ALPHABET - (int)req.START_CHAR_ALPHABET + 1;
 
-    if (hash == req.md5_hash) // if hash match the word copy the result in response.match
+    bool found = false;
+    for (int i = 1; i < MAX_MESSAGE_LENGTH && !found; ++i)
     {
-        strcpy(rsp.match, word);
-        return rsp;
+        memset(buff, 0, MAX_MESSAGE_LENGTH + 1);
+        buff[0] = req.first_letter;
+        found = bruteImpl(buff, 1, i, alphabetSize, req, rsp);
     }
-    else
+}
+
+bool bruteImpl(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp)
+{
+    for (int i = 0; i < alphabetSize; ++i)
     {
-        return rsp;
+        str[index] = req.START_CHAR_ALPHABET + i;
+
+        if (index == maxDepth)
+        { // Changed last letter of the word
+            //printf("genword: %s\n", str); // TODO Hash calculation and comparison
+            if (calculate_hash(req, str))
+            {
+                strcpy(rsp->match, str);
+                return true;
+            }
+        }
+        else
+            bruteImpl(str, index + 1, maxDepth, alphabetSize, req, rsp);
     }
+    return false;
 }
