@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
             else if (curr_letter == ALPHABET_END_CHAR && curr_hash < MD5_LIST_NROF) // if last initial letter has been reached and there is still other hashes to bruteforce, go to the next one
             {
                 curr_hash++;
+                curr_letter = ALPHABET_START_CHAR;
             }
         }
 
