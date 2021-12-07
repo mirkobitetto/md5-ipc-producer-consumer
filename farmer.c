@@ -2,8 +2,8 @@
  * Operating Systems  (2INCO)  Practical Assignment
  * Interprocess Communication
  *
- * STUDENT_NAME_1 (STUDENT_NR_1)
- * STUDENT_NAME_2 (STUDENT_NR_2)
+ * MIRKO_BITETTO (1769286)
+ * MOURAD_BOUSTANI (1463233)
  *
  * Grading:
  * Your work will be evaluated based on the following criteria:
@@ -27,10 +27,10 @@
 #include "settings.h" // definition of work
 #include "common.h"
 
-static char mq_name1[80]; // definition of the message queque name
+static char mq_name1[80]; // definition of the message queque name string
 static char mq_name2[80];
 
-#define STUDENT_NAME "TEST" // just added as a test, needs to be changed later
+#define STUDENT_NAME "Mirko"
 
 int main(int argc, char *argv[])
 {
@@ -75,8 +75,6 @@ int main(int argc, char *argv[])
         {
             if (processID[i] == 0)
             {
-                // printf("child  pid:%d\n", getpid()); print pid of child, might be useful for debug
-
                 execlp("./worker", "worker", mq_name1, mq_name2, NULL); // Load worker program in child processes with arguments the 2 message queues
                 // or try this one:
                 //execlp ("./interprocess_basics", "my_own_name_for_argv0", "first_argument", NULL);
@@ -88,13 +86,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    // TODO
     //  * do the farming
 
     int jobs_todo = JOBS_NROF;             // Jobs_todo defined as nr_hashes * number of char
     int curr_hash = 0;                     // index of the current hash trying to brute-force
     int curr_letter = ALPHABET_START_CHAR; // current intial letter to send to worker
-    int nr_message = 0;
+    int nr_message = 0;                    // number of messages expected to receive
 
     while (jobs_todo != 0) // until there is jobs to do
     {
@@ -125,7 +122,7 @@ int main(int argc, char *argv[])
         }
 
         mq_getattr(mq_fd_response, &attr); // number of messages in response message queue
-        if (attr.mq_curmsgs > 0)           // else if there is new messages received, read them
+        if (attr.mq_curmsgs > 0)           // if there is new messages received, read them
         {
             mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
             // print matched word to stdout
@@ -138,7 +135,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    while (nr_message != 0)
+    while (nr_message != 0) // wait to receive all messages
     {
         mq_receive(mq_fd_response, (char *)&rsp, sizeof(rsp), NULL);
         // print matched word to stdout

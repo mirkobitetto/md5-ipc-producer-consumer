@@ -2,8 +2,8 @@
  * Operating Systems  (2INCO)  Practical Assignment
  * Interprocess Communication
  *
- * STUDENT_NAME_1 (STUDENT_NR_1)
- * STUDENT_NAME_2 (STUDENT_NR_2)
+ * MIRKO_BITETTO (1769286)
+ * MOURAD_BOUSTANI (1463233)
  *
  * Grading:
  * Your work will be evaluated based on the following criteria:
@@ -31,11 +31,8 @@ struct mq_attr attr;
 static void rsleep(int t);
 
 bool calculate_hash(MQ_REQUEST_MESSAGE req, char word[]);
-void bruteSequential(MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp);
-bool bruteImpl(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp);
-//
-
-//
+void brute(MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp);
+bool bruteRec(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp);
 
 int main(int argc, char *argv[])
 {
@@ -59,8 +56,8 @@ int main(int argc, char *argv[])
         //      - read from a message queue the new job to do
         mq_receive(mq_fd_request, (char *)&req, sizeof(req), NULL);
 
-        //      - wait a random amount of time (e.g. rsleep(10000);)
-        rsleep(10000);
+        //      - wait a random amount of time
+        rsleep(1000);
 
         //      - do that job
 
@@ -70,7 +67,7 @@ int main(int argc, char *argv[])
             rsp.match[i] = '\0';
         }
 
-        char initial[] = {req.first_letter, '\0'}; //let's test if the initial is the solution
+        char initial[] = {req.first_letter, '\0'}; //let's test if the initial letter is the solution
 
         bool found = calculate_hash(req, initial);
 
@@ -80,7 +77,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            bruteSequential(req, &rsp);
+            brute(req, &rsp);
         }
 
         //      - write the results to a message queue
@@ -127,29 +124,29 @@ bool calculate_hash(MQ_REQUEST_MESSAGE req, char word[])
     return false;
 }
 
-void bruteSequential(MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp)
+void brute(MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp)
 {
-    char buff[MAX_MESSAGE_LENGTH + 1];
+    char buffer[MAX_MESSAGE_LENGTH + 1];
     int alphabetSize = (int)req.END_CHAR_ALPHABET - (int)req.START_CHAR_ALPHABET + 1;
 
     bool found = false;
     for (int i = 1; i < MAX_MESSAGE_LENGTH && !found; ++i)
     {
-        memset(buff, 0, MAX_MESSAGE_LENGTH + 1);
-        buff[0] = req.first_letter;
-        found = bruteImpl(buff, 1, i, alphabetSize, req, rsp);
+        memset(buffer, 0, MAX_MESSAGE_LENGTH + 1);
+        buffer[0] = req.first_letter;
+        found = bruteRec(buffer, 1, i, alphabetSize, req, rsp);
     }
 }
 
-bool bruteImpl(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp)
+bool bruteRec(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_MESSAGE req, MQ_RESPONSE_MESSAGE *rsp)
 {
     for (int i = 0; i < alphabetSize; ++i)
     {
         str[index] = req.START_CHAR_ALPHABET + i;
 
         if (index == maxDepth)
-        { // Changed last letter of the word
-            //printf("genword: %s\n", str); // TODO Hash calculation and comparison
+        {
+            // Hash calculation and comparison
             if (calculate_hash(req, str))
             {
                 strcpy(rsp->match, str);
@@ -157,7 +154,7 @@ bool bruteImpl(char *str, int index, int maxDepth, int alphabetSize, MQ_REQUEST_
             }
         }
         else
-            bruteImpl(str, index + 1, maxDepth, alphabetSize, req, rsp);
+            bruteRec(str, index + 1, maxDepth, alphabetSize, req, rsp);
     }
     return false;
 }
