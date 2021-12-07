@@ -25,12 +25,16 @@ typedef struct
     char first_letter;  // first letter of the hash assigned by the farmer
     uint128_t md5_hash; // hash of the string to find
 
+    int hash_index; // used for printing out the result
+
 } MQ_REQUEST_MESSAGE;
 
 typedef struct
 {
     //define data structure of the response message
     char match[MAX_MESSAGE_LENGTH + 1]; // matched hash
+
+    int hash_index; // used for printing out the result
 
 } MQ_RESPONSE_MESSAGE;
 

@@ -88,6 +88,15 @@ int main(int argc, char *argv[])
 
     //  * do the farming
 
+    char output[MD5_LIST_NROF][MAX_MESSAGE_LENGTH + 1];
+    for (int i = 0; i < MD5_LIST_NROF; i++)
+    {
+        for (int j = 0; j < MAX_MESSAGE_LENGTH + 1; j++)
+        {
+            output[i][j] = '\0';
+        }
+    }
+
     int jobs_todo = JOBS_NROF;             // Jobs_todo defined as nr_hashes * number of char
     int curr_hash = 0;                     // index of the current hash trying to brute-force
     int curr_letter = ALPHABET_START_CHAR; // current intial letter to send to worker
@@ -105,6 +114,7 @@ int main(int argc, char *argv[])
             req.END_CHAR_ALPHABET = ALPHABET_END_CHAR;
             req.first_letter = curr_letter;
             req.md5_hash = md5_list[curr_hash];
+            req.hash_index = curr_hash;
 
             //Send message
             mq_send(mq_fd_request, (char *)&req, sizeof(req), 0);
@@ -129,7 +139,7 @@ int main(int argc, char *argv[])
             nr_message--;
             if (strlen(rsp.match) > 0)
             {
-                printf("\'%s\'\n", rsp.match);
+                strcpy(output[rsp.hash_index], rsp.match);
             }
             jobs_todo--;
         }
@@ -142,8 +152,13 @@ int main(int argc, char *argv[])
         nr_message--;
         if (strlen(rsp.match) > 0)
         {
-            printf("\'%s\'\n", rsp.match);
+            strcpy(output[rsp.hash_index], rsp.match);
         }
+    }
+
+    for (int i = 0; i < MD5_LIST_NROF; i++)
+    {
+        printf("\'%s\'\n", output[i]);
     }
 
     //  * wait until the chilren have been stopped (see process_test())

@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         mq_receive(mq_fd_request, (char *)&req, sizeof(req), NULL);
 
         //      - wait a random amount of time
-        rsleep(1000);
+        rsleep(10000);
 
         //      - do that job
 
@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
             brute(req, &rsp);
         }
 
+        rsp.hash_index = req.hash_index;
         //      - write the results to a message queue
         mq_send(mq_fd_response, (char *)&rsp, sizeof(rsp), 0);
 
